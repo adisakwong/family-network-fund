@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Network Fund</title>
+
+    <!-- Include Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 for nice UI Alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24"
+                fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" style="margin-bottom: 5px; filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.15));">
+                <path
+                    d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                <path d="M12 7.5v5" />
+                <path d="M9.5 10h5" />
+            </svg>
+            <h1 style="font-size: 18px; line-height: 1.2; margin-bottom: 2px;">Family Network Fund <br>for Healthcare
+                and Funeral</h1>
+            <p style="font-size: 13.5px; font-weight: 300; opacity: 0.95; margin-top: 0;">
+                เงินสมทบทุนเครือญาติเพื่อสุขภาพและพิธีศพ</p>
+        </header>
+
+        <!-- ========================= -->
+        <!-- MAIN / LOGIN PAGE         -->
+        <!-- ========================= -->
+        <section id="login-page" class="page active">
+            <h2>เข้าสู่ระบบ (Login)</h2>
+            <div class="form-group">
+                <label for="login-id">รหัสบัตรประชาชน (13 หลัก)</label>
+                <input type="text" inputmode="numeric" id="login-id" maxlength="13" pattern="\d{13}"
+                    placeholder="กรอกรหัส 13 หลัก" required>
+            </div>
+            <button id="btn-login" class="btn primary">ตรวจสอบ / เข้าสู่ระบบ</button>
+        </section>
+
+        <!-- ========================= -->
+        <!-- REGISTER PAGE             -->
+        <!-- ========================= -->
+        <section id="register-page" class="page hidden">
+            <h2>ลงทะเบียน (Register)</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="reg-date">วันที่ลงทะเบียน (Register Date)</label>
+                    <input type="date" id="reg-date" readonly required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-id">รหัสบัตรประชาชน (13 หลัก)</label>
+                    <input type="text" id="reg-id" maxlength="13" pattern="\d{13}" readonly required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-name">ชื่อ (Name)</label>
+                    <input type="text" id="reg-name" required placeholder="กรอกชื่อ">
+                </div>
+                <div class="form-group">
+                    <label for="reg-surname">นามสกุล (Surname)</label>
+                    <input type="text" id="reg-surname" required placeholder="กรอกนามสกุล">
+                </div>
+                <div class="form-group">
+                    <label for="reg-address">ที่อยู่ (Address)</label>
+                    <textarea id="reg-address" rows="3" required placeholder="กรอกที่อยู่ปัจจุบัน"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reg-phone">เบอร์โทรศัพท์ (Phone)</label>
+                    <input type="tel" id="reg-phone" inputmode="numeric" required placeholder="กรอกเบอร์โทรศัพท์">
+                </div>
+                <!-- ใหม่ 4 ฟิลด์ -->
+                <div class="form-group">
+                    <label for="reg-birthdate">วัน/เดือน/ปีเกิด (Birthdate)</label>
+                    <input type="date" id="reg-birthdate" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-illness">โรคประจำตัว (Illness)</label>
+                    <input type="text" id="reg-illness" placeholder="หากไม่มีให้เขียนว่า ไม่มี" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-beneficiary">ผู้รับผลประโยชน์ (Beneficiary)</label>
+                    <input type="text" id="reg-beneficiary" required placeholder="ระบุชื่อผู้รับผลประโยชน์">
+                </div>
+                <div class="form-group">
+                    <label for="reg-related">ความเกี่ยวข้อง (Relationship)</label>
+                    <input type="text" id="reg-related" required placeholder="เช่น บิดา, มารดา, บุตร, สามี, ภรรยา">
+                </div>
+                <div class="form-group">
+                    <label>ถ่ายภาพ/อัปโหลดรูป (Photo)</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" id="btn-open-camera" class="btn secondary small"
+                            style="flex:1; padding: 10px;">📷 ถ่ายด้วยกล้อง</button>
+                        <button type="button" id="btn-upload-image" class="btn secondary small"
+                            style="flex:1; padding: 10px;">📁 เลือกรูปภาพ</button>
+                    </div>
+                    <input type="file" id="reg-image" accept="image/*" style="display:none;">
+
+                    <div id="camera-container"
+                        style="display:none; padding:10px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px; margin-bottom:10px;">
+                        <video id="camera-video" autoplay playsinline
+                            style="width:100%; max-height:250px; border-radius:8px; background-color:#000; object-fit:cover;"></video>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button type="button" id="btn-capture-photo" class="btn primary small"
+                                style="flex:1; padding:10px;">📸 กดถ่ายภาพ</button>
+                            <button type="button" id="btn-switch-camera" class="btn secondary small"
+                                style="flex:1; padding:10px;">🔄 สลับกล้อง</button>
+                        </div>
+                    </div>
+                    <canvas id="camera-canvas" style="display:none;"></canvas>
+
+                    <div class="preview-container">
+                        <img id="image-preview" src="" alt="Image Preview" style="display:none;">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button type="button" id="btn-cancel-reg" class="btn secondary">ยกเลิก</button>
+                    <button type="submit" id="btn-submit-reg" class="btn primary">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ========================= -->
+        <!-- MEMBERS PAGE              -->
+        <!-- ========================= -->
+        <section id="members-page" class="page hidden">
+            <div class="members-header">
+                <h2>รายชื่อสมาชิกทั้งหมด</h2>
+                <button type="button" id="btn-logout" class="btn secondary small">ออกจากระบบ</button>
+            </div>
+            <div id="loading-members"
+                style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; gap: 15px;">
+                <div class="spinner"></div>
+                <p style="margin: 0; font-weight: 500; color: var(--primary-color); animation: pulse 1.5s infinite;">
+                    กำลังโหลดข้อมูลสมาชิก...</p>
+            </div>
+            <div id="members-list" class="members-grid">
+                <!-- Members will be dynamically loaded here -->
+            </div>
+        </section>
+
+        <!-- ========================= -->
+        <!-- MEMBER DETAIL PAGE        -->
+        <!-- ========================= -->
+        <section id="member-detail-page" class="page hidden">
+            <div class="members-header" style="justify-content: flex-start; gap: 15px;">
+                <button type="button" id="btn-back-to-list" class="btn secondary small"
+                    style="padding: 6px 12px; margin: 0;">&larr; กลับ</button>
+                <h2 style="margin: 0; font-size: 18px;">ข้อมูลสมาชิก</h2>
+            </div>
+            <div id="member-detail-content"
+                style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 10px;">
+                <!-- Details injected here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer
+        style="text-align: center; margin-top: auto; font-size: 13px; color: #64748b; padding: 10px 0 0 0; width: 100%;">
+        Copyright 2026 &copy; Tech for Ummah
+    </footer>
+
+    <!-- Configuration for API -->
+    <script>
+        // ใส่ URL Web App ของ Google Apps Script ของคุณที่นี่
+        //const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+        // const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwfwsNUkC2kBwj-4PnMh6J3O_40l2K5jDhSj1aAoHaike5psfER7nbwDVKn5MRGZwkf/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyQ8Wu-qhnAXlOmiGdbhd0nvB9to1-O7Hwi9c8iBysAgvBTpNv61tMN4hYRT-AvOcJy/exec';
+    </script>
+
+    <!-- Include Javascript -->
+    <script src="script.js"></script>
+</body>
+
+</html>
