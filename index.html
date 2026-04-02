@@ -37,8 +37,9 @@
             <!-- <h1 style="font-size: 18px; line-height: 1.2; margin-bottom: 2px;">Family Network Fund <br>for Healthcare
                 and Funeral</h1> -->
             <h1 style="font-size: 18px; line-height: 1.2; margin-bottom: 2px;">Family Network Fund</h1>
-            <p style="font-size: 14px; font-weight: 300; opacity: 0.95; margin-top: 0;">
-                for Healthcare and Funeral</p>
+            <p style="font-size: 16px; font-weight: 300; opacity: 0.95; margin-top: 0;">
+                <b>for Healthcare and Funeral</b>
+            </p>
             <p style="font-size: 13.5px; font-weight: 300; opacity: 0.95; margin-top: 0;">
                 เงินสมทบทุนเครือญาติเพื่อสุขภาพและพิธีศพ</p>
         </header>
@@ -143,7 +144,11 @@
         <section id="members-page" class="page hidden">
             <div class="members-header">
                 <h2>รายชื่อสมาชิกทั้งหมด</h2>
-                <button type="button" id="btn-logout" class="btn secondary small">ออกจากระบบ</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" id="btn-financial-report" class="btn primary small"
+                        style="padding: 6px 12px; background-color: #10b981; border-color: #10b981;">📊 การเงิน</button>
+                    <button type="button" id="btn-logout" class="btn secondary small">ออกจากระบบ</button>
+                </div>
             </div>
             <div id="loading-members"
                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; gap: 15px;">
@@ -170,6 +175,26 @@
                 <!-- Details injected here -->
             </div>
         </section>
+
+        <!-- ========================= -->
+        <!-- FINANCIAL REPORT PAGE     -->
+        <!-- ========================= -->
+        <section id="financial-report-page" class="page hidden">
+            <div class="members-header" style="justify-content: flex-start; gap: 15px;">
+                <button type="button" id="btn-back-from-financial" class="btn secondary small"
+                    style="padding: 6px 12px; margin: 0;">&larr; กลับ</button>
+                <h2 style="margin: 0; font-size: 18px;">รายงานสถานะทางการเงิน</h2>
+            </div>
+            <div id="loading-financial"
+                style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; gap: 15px; display: none;">
+                <div class="spinner"></div>
+                <p style="margin: 0; font-weight: 500; color: var(--primary-color); animation: pulse 1.5s infinite;">
+                    กำลังโหลดข้อมูลการเงิน...</p>
+            </div>
+            <div id="financial-report-content" style="margin-top: 15px; width: 100%; overflow-x: auto;">
+                <!-- Table injected here -->
+            </div>
+        </section>
     </div>
 
     <!-- Footer -->
@@ -183,7 +208,7 @@
         // ใส่ URL Web App ของ Google Apps Script ของคุณที่นี่
         //const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
         // const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwfwsNUkC2kBwj-4PnMh6J3O_40l2K5jDhSj1aAoHaike5psfER7nbwDVKn5MRGZwkf/exec';
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyQ8Wu-qhnAXlOmiGdbhd0nvB9to1-O7Hwi9c8iBysAgvBTpNv61tMN4hYRT-AvOcJy/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxNkY4DLM8YG4_IovoKi8x-N8zPyT9ru10CQe9N1hJ59V0riWo1et5zIiImfeCRfKce/exec';
     </script>
 
     <!-- Include Javascript -->

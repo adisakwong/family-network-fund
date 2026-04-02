@@ -38,6 +38,8 @@ function doGet(e) {
       result = checkMember(e.parameter.personId);
     } else if (action === 'getAllMembers') {
       result = getAllMembers();
+    } else if (action === 'getFinancialReport') {
+      result = getFinancialReport();
     } else {
       throw new Error('Invalid action');
     }
@@ -206,6 +208,51 @@ function getAllMembers() {
         });
     }
     return { success: true, members: members };
+  } catch (error) {
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
+ * Get Financial Report from 'financial' sheet
+ */
+function getFinancialReport() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('financial');
+    if (!sheet) {
+      sheet = ss.insertSheet('financial');
+      sheet.appendRow(['Date', 'Description', 'Income', 'Outcome']);
+      return { success: true, data: [] };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, data: [] };
+    
+    const headers = data[0];
+    const idDate = headers.findIndex(h => h.toString().toLowerCase().includes('date') || h.toString().toLowerCase().includes('วัน'));
+    const idIncome = headers.findIndex(h => h.toString().toLowerCase().includes('income') || h.toString().toLowerCase().includes('รายรับ'));
+    const idOutcome = headers.findIndex(h => h.toString().toLowerCase().includes('outcome') || h.toString().toLowerCase().includes('expense') || h.toString().toLowerCase().includes('รายจ่าย'));
+    
+    const dateCol = idDate > -1 ? idDate : 0;
+    const incomeCol = idIncome > -1 ? idIncome : 2;
+    const outcomeCol = idOutcome > -1 ? idOutcome : 3;
+    
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+        let rowDate = data[i][dateCol];
+        let rowIncome = data[i][incomeCol];
+        let rowOutcome = data[i][outcomeCol];
+        
+        if (!rowDate && !rowIncome && !rowOutcome) continue; 
+        
+        result.push({
+            date: rowDate instanceof Date ? rowDate.toISOString() : rowDate,
+            income: parseFloat(rowIncome) || 0,
+            outcome: parseFloat(rowOutcome) || 0
+        });
+    }
+    return { success: true, data: result };
   } catch (error) {
     return { success: false, error: error.toString() };
   }

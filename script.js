@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerPage = document.getElementById('register-page');
     const membersPage = document.getElementById('members-page');
     const memberDetailPage = document.getElementById('member-detail-page');
+    const financialReportPage = document.getElementById('financial-report-page');
 
     const loginIdInput = document.getElementById('login-id');
     const btnLogin = document.getElementById('btn-login');
@@ -29,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnBackToList = document.getElementById('btn-back-to-list');
     const membersList = document.getElementById('members-list');
     const loadingMembers = document.getElementById('loading-members');
+
+    const btnFinancialReport = document.getElementById('btn-financial-report');
+    const btnBackFromFinancial = document.getElementById('btn-back-from-financial');
+    const loadingFinancial = document.getElementById('loading-financial');
+    const financialReportContent = document.getElementById('financial-report-content');
 
     let base64Image = '';
     let currentPersonId = '';
@@ -411,5 +417,120 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
         showPage(memberDetailPage);
+    }
+
+    if (btnFinancialReport) {
+        btnFinancialReport.addEventListener('click', () => {
+            loadFinancialReport();
+            showPage(financialReportPage);
+        });
+    }
+
+    if (btnBackFromFinancial) {
+        btnBackFromFinancial.addEventListener('click', () => {
+            showPage(membersPage);
+        });
+    }
+
+    async function loadFinancialReport() {
+        loadingFinancial.style.display = 'flex';
+        financialReportContent.innerHTML = '';
+
+        try {
+            const result = await callGAS('getFinancialReport', {}, false);
+            loadingFinancial.style.display = 'none';
+            if (result.success) {
+                renderFinancialReport(result.data);
+            } else {
+                financialReportContent.innerHTML = `<p style="color:red; text-align:center;">ไม่สามารถโหลดข้อมูลได้: ${result.error}</p>`;
+            }
+        } catch (error) {
+            loadingFinancial.style.display = 'none';
+            financialReportContent.innerHTML = `<p style="color:red; text-align:center;">เกิดข้อผิดพลาดในการเชื่อมต่อ: ${error.message || String(error)}</p>`;
+        }
+    }
+
+    function renderFinancialReport(data) {
+        if (!data || data.length === 0) {
+            financialReportContent.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">ยังไม่มีข้อมูลการเงินในระบบ</p>';
+            return;
+        }
+
+        const monthlyData = {};
+        let totalIncome = 0;
+        let totalOutcome = 0;
+
+        data.forEach(item => {
+            let dateObj;
+            if (item.date) {
+                dateObj = new Date(item.date);
+            } else {
+                return;
+            }
+
+            if (isNaN(dateObj.getTime())) return;
+
+            const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+            const monthLabel = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'long' });
+
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = { label: monthLabel, income: 0, outcome: 0, time: dateObj.getTime() };
+            }
+            monthlyData[monthKey].income += (Number(item.income) || 0);
+            monthlyData[monthKey].outcome += (Number(item.outcome) || 0);
+            
+            totalIncome += (Number(item.income) || 0);
+            totalOutcome += (Number(item.outcome) || 0);
+        });
+
+        const sortedMonths = Object.values(monthlyData).sort((a, b) => a.time - b.time);
+
+        if (sortedMonths.length === 0) {
+            financialReportContent.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">ยังไม่มีข้อมูลการเงินในระบบ</p>';
+            return;
+        }
+
+        let tableHtml = `
+            <table class="financial-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">เดือน/ปี</th>
+                        <th style="text-align: right; color: #10b981;">รายรับ</th>
+                        <th style="text-align: right; color: #ef4444;">รายจ่าย</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        sortedMonths.forEach(month => {
+            tableHtml += `
+                <tr>
+                    <td style="text-align: left; font-size: 14px;">${escapeHtml(month.label)}</td>
+                    <td style="text-align: right; color: #10b981; font-weight: 500;">${month.income.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td style="text-align: right; color: #ef4444; font-weight: 500;">${month.outcome.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+            `;
+        });
+
+        const netBalance = totalIncome - totalOutcome;
+        const balanceColor = netBalance >= 0 ? '#10b981' : '#ef4444';
+
+        tableHtml += `
+                </tbody>
+                <tfoot>
+                    <tr style="background-color: #f1f5f9; font-weight: bold;">
+                        <td style="text-align: right; font-size: 14px;">รวมทั้งหมด</td>
+                        <td style="text-align: right; color: #10b981;">${totalIncome.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td style="text-align: right; color: #ef4444;">${totalOutcome.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                    <tr style="background-color: #e0f2fe; font-weight: bold; font-size: 16px;">
+                        <td style="text-align: right;">คงเหลือสุทธิ</td>
+                        <td colspan="2" style="text-align: right; color: ${balanceColor};">${netBalance.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
+
+        financialReportContent.innerHTML = tableHtml;
     }
 });
