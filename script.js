@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function loadMembers() {
-        loadingMembers.style.display = 'block';
+        loadingMembers.style.display = 'flex';
         membersList.innerHTML = '';
 
         try {
