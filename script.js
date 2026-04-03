@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const regDateInput = document.getElementById('reg-date');
     const regForm = document.getElementById('register-form');
     const btnCancelReg = document.getElementById('btn-cancel-reg');
+    const btnBackFromRegister = document.getElementById('btn-back-from-register');
     const regImageInput = document.getElementById('reg-image');
     const imagePreview = document.getElementById('image-preview');
 
@@ -218,6 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
         showPage(loginPage);
         loginIdInput.value = '';
     });
+
+    if (btnBackFromRegister) {
+        btnBackFromRegister.addEventListener('click', () => {
+            btnCancelReg.click();
+        });
+    }
 
     regForm.addEventListener('submit', async (e) => {
         e.preventDefault();
