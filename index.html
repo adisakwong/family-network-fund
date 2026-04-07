@@ -61,11 +61,12 @@
         <!-- REGISTER PAGE             -->
         <!-- ========================= -->
         <section id="register-page" class="page hidden">
-
+            <a href="regulations.pdf" target="_self" class="btn secondary"
+                style="margin-bottom: 20px; text-decoration: none;">📖 อ่านข้อบังคับ</a>
             <div class="members-header" style="justify-content: flex-start; gap: 15px;">
                 <button type="button" id="btn-back-from-register" class="btn secondary small"
                     style="padding: 6px 12px; margin: 0;">&larr; กลับ</button>
-                <h2 style="margin: 0; font-size: 18px;">ลงทะเบียน (Register)</h2>
+                <h2 style="margin: 0; font-size: 18px;">ลงทะเบียนสมาชิกใหม่ (Register)</h2>
             </div>
             <form id="register-form">
                 <div class="form-group">
@@ -234,6 +235,67 @@
                 <!-- Table injected here -->
             </div>
         </section>
+
+        <!-- ========================= -->
+        <!-- TRANSACTION PAGE          -->
+        <!-- ========================= -->
+        <section id="transaction-page" class="page hidden">
+            <div class="members-header" style="justify-content: flex-start; gap: 15px;">
+                <button type="button" id="btn-back-from-transaction" class="btn secondary small"
+                    style="padding: 6px 12px; margin: 0;">&larr; กลับ</button>
+                <h2 style="margin: 0; font-size: 18px;">แจ้งผลการส่งเงิน (Payment)</h2>
+            </div>
+            <form id="transaction-form" style="margin-top: 15px;">
+                <div class="form-group">
+                    <label for="trans-date">วันที่โอน (Date)</label>
+                    <input type="date" id="trans-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="trans-person-id">รหัสบัตรประชาชน (Person ID)</label>
+                    <input type="text" id="trans-person-id" readonly required>
+                </div>
+                <div class="form-group">
+                    <label for="trans-type">ประเภทการส่งเงิน (Type)</label>
+                    <select id="trans-type" required
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit;">
+                        <option value="">-- เลือกประเภท --</option>
+                        <option value="101">บริจาครายเดือน(ค่าสมาชิก)</option>
+                        <option value="102">บริจาครายปี(ค่าสมาชิก)</option>
+                        <option value="103">บริจาคเป็นทุนประเดิม(ค่าสมัคร)</option>
+                        <option value="104">บริจาคทำบุญอื่นๆ</option>
+                    </select>
+                    <!-- 
+                    100=บริจาคเป็นทุนประเดิม(ค่าสมัคร)
+                    101=บริจาครายเดือน(ค่าสมาชิก)
+                    102=บริจาครายปี(ค่าสมาชิก)
+                    201=มอบเงินเยี่ยมผู้ป่วย
+                    202=มอบเงินช่วยเหลือพิธีศพ
+                    -->
+                </div>
+                <div class="form-group">
+                    <label for="trans-amount">จำนวนเงิน (Amount)</label>
+                    <input type="number" id="trans-amount" step="0.01" required placeholder="0.00"
+                        style="font-size: 24px; font-weight: bold; text-align: center; height: 60px; color: var(--primary-color); border: 2px solid var(--primary-color);">
+                </div>
+                <div class="form-group">
+                    <label for="trans-remark">หมายเหตุ (Remark)</label>
+                    <input type="text" id="trans-remark" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)">
+                </div>
+                <div class="form-group">
+                    <label>แนบสลิปการโอน (Slip Photo)</label>
+                    <button type="button" id="btn-upload-slip" class="btn secondary small"
+                        style="width: 100%; padding: 12px; margin-bottom: 10px;">📁 เลือกรูปภาพสลิป</button>
+                    <input type="file" id="trans-slip" accept="image/*" style="display:none;">
+                    <div class="preview-container" style="text-align: center;">
+                        <img id="slip-preview" src="" alt="Slip Preview"
+                            style="display:none; max-width: 180px; max-height: 250px; margin: 0 auto; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); object-fit: contain;">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button type="submit" id="btn-submit-transaction" class="btn primary">ส่งข้อมูลแจ้งโอน</button>
+                </div>
+            </form>
+        </section>
     </div>
 
     <!-- Footer -->
@@ -244,7 +306,8 @@
 
     <!-- Configuration for API -->
     <script>
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyz7dMJn1mWX1lN-0jAbflAb0YA2dD4Z4mFg0tEte0x2pi_SVzo4f1IcGdRi1dWDbuE/exec';
+        // const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyz7dMJn1mWX1lN-0jAbflAb0YA2dD4Z4mFg0tEte0x2pi_SVzo4f1IcGdRi1dWDbuE/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyifIPGgxc2GZ4BQbpsi4dAWR7KoRSxxXHpgKLkYJHhfHPp2_8_rgDQK56o5BiX4pEy/exec';
     </script>
 
     <!-- Include Javascript -->

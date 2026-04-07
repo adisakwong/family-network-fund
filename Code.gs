@@ -15,6 +15,10 @@ function doPost(e) {
       const result = registerMember(postData.data);
       return ContentService.createTextOutput(JSON.stringify(result))
                            .setMimeType(ContentService.MimeType.JSON);
+    } else if (postData.action === 'submitTransaction') {
+      const result = submitTransaction(postData.data);
+      return ContentService.createTextOutput(JSON.stringify(result))
+                           .setMimeType(ContentService.MimeType.JSON);
     }
     
     throw new Error('Invalid action');
@@ -55,6 +59,9 @@ function doGet(e) {
 // Configuration Variables
 const SHEET_NAME = 'members';
 const IMAGE_FOLDER_NAME = 'images';
+const TRANSACTIONS_SHEET_NAME = 'transactions';
+const SLIPS_FOLDER_NAME = 'slips';
+const PAYMENT_FILE_NAME = 'payment';
 
 /**
  * Get or create the 'members' sheet
@@ -127,10 +134,10 @@ function checkMember(personId) {
                 related: idRelated !== -1 && data[i][idRelated] !== undefined ? data[i][idRelated] : '',
                 nickname: idNickname !== -1 && data[i][idNickname] !== undefined ? data[i][idNickname] : ''
             };
-            return { found: true, member: member };
+            return { found: true, member: member, isAdmin: isAdmin(personId) };
         }
     }
-    return { found: false };
+    return { found: false, isAdmin: isAdmin(personId) };
   } catch (error) {
     return { error: error.toString() };
   }
@@ -300,5 +307,116 @@ function getFinancialReport() {
     return { success: true, data: result };
   } catch (error) {
     return { success: false, error: error.toString() };
+  }
+}
+
+/**
+ * Get or create the 'transactions' sheet in an external 'payment' spreadsheet
+ */
+function getTransactionsSheet() {
+  let file;
+  const files = DriveApp.getFilesByName(PAYMENT_FILE_NAME);
+  
+  if (files.hasNext()) {
+    file = files.next();
+  } else {
+    // Create new external spreadsheet
+    const newSS = SpreadsheetApp.create(PAYMENT_FILE_NAME);
+    file = DriveApp.getFileById(newSS.getId());
+  }
+
+  const ss = SpreadsheetApp.open(file);
+  let sheet = ss.getSheetByName(TRANSACTIONS_SHEET_NAME);
+  
+  if (!sheet) {
+    sheet = ss.insertSheet(TRANSACTIONS_SHEET_NAME);
+    sheet.appendRow(['Date', 'Person_id', 'Type_code', 'Amount', 'Slip_URL', 'Remark']);
+    
+    // Optionally remove 'Sheet1' if it's a new spreadsheet
+    const sheet1 = ss.getSheetByName('Sheet1');
+    if (sheet1) ss.deleteSheet(sheet1);
+  }
+  
+  return sheet;
+}
+
+/**
+ * Get or create the 'slips' folder in Google Drive
+ */
+function getSlipsFolder() {
+  const folders = DriveApp.getFoldersByName(SLIPS_FOLDER_NAME);
+  if (folders.hasNext()) {
+    return folders.next();
+  }
+  return DriveApp.createFolder(SLIPS_FOLDER_NAME);
+}
+
+/**
+ * Submit a new transaction including uploading slip image
+ * @param {object} data - Transaction data
+ * @return {object} - { success: boolean }
+ */
+function submitTransaction(data) {
+  try {
+    const folder = getSlipsFolder();
+    let slipUrl = '';
+    
+    // Process slip image file
+    if (data.slipFile && data.slipName) {
+      const contentType = data.slipFile.substring(5, data.slipFile.indexOf(';'));
+      const base64Data = data.slipFile.substring(data.slipFile.indexOf('base64,') + 7);
+      
+      const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, data.personId + '_slip_' + Date.now() + '_' + data.slipName);
+      const file = folder.createFile(blob);
+      
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      slipUrl = 'https://drive.google.com/thumbnail?id=' + file.getId();
+    }
+
+    // Save to transactions sheet
+    const sheet = getTransactionsSheet();
+    sheet.appendRow([
+      data.date || new Date(),
+      "'" + String(data.personId),
+      data.typeCode || '',
+      data.amount || 0,
+      slipUrl,
+      data.remark || ''
+    ]);
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
+ * Check if the personId is in the 'admin' sheet
+ * @param {string} personId
+ * @return {boolean}
+ */
+function isAdmin(personId) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('admin');
+    if (!sheet) return false;
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return false;
+    
+    // Check headers for Person_id
+    const headers = data[0];
+    const findPersonCol = headers.findIndex(h => h.toString().toLowerCase().includes('person_id') || h.toString().toLowerCase().includes('รหัส'));
+    const colIdx = findPersonCol > -1 ? findPersonCol : 0;
+    
+    const pId = String(personId).trim();
+    for (let i = 1; i < data.length; i++) {
+        if (String(data[i][colIdx]).trim() === pId) {
+            return true;
+        }
+    }
+    return false;
+  } catch (error) {
+    return false;
   }
 }

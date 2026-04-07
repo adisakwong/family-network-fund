@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const membersPage = document.getElementById('members-page');
     const memberDetailPage = document.getElementById('member-detail-page');
     const financialReportPage = document.getElementById('financial-report-page');
+    const transactionPage = document.getElementById('transaction-page');
 
     const loginIdInput = document.getElementById('login-id');
     const btnLogin = document.getElementById('btn-login');
@@ -45,9 +46,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnShareRegister = document.getElementById('btn-share-register');
     const btnShareFinance = document.getElementById('btn-share-finance');
 
+    const transactionForm = document.getElementById('transaction-form');
+    const btnBackFromTransaction = document.getElementById('btn-back-from-transaction');
+    const btnUploadSlip = document.getElementById('btn-upload-slip');
+    const transSlipInput = document.getElementById('trans-slip');
+    const slipPreview = document.getElementById('slip-preview');
+    const transDateInput = document.getElementById('trans-date');
+    const transPersonIdInput = document.getElementById('trans-person-id');
+    const transTypeInput = document.getElementById('trans-type');
+    const transAmountInput = document.getElementById('trans-amount');
+    const transRemarkInput = document.getElementById('trans-remark');
+
     let base64Image = '';
     let currentPersonId = '';
     let loggedInMember = null;
+    let base64Slip = '';
+    let isAdminUser = false;
 
     const isNumeric13 = (val) => {
         return /^\d{13}$/.test(val);
@@ -120,8 +134,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.found) {
                 currentPersonId = personId;
                 loggedInMember = result.member;
+                isAdminUser = result.isAdmin || false;
                 showMemberDetail(result.member);
             } else {
+                isAdminUser = result.isAdmin || false;
                 Swal.fire({
                     title: 'ไม่พบข้อมูล',
                     text: 'คุณยังไม่ได้ลงทะเบียน กรุณาลงทะเบียนใหม่',
@@ -356,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLogout.addEventListener('click', () => {
         currentPersonId = '';
         loggedInMember = null;
+        isAdminUser = false;
         showPage(loginPage);
         loginIdInput.value = '';
     });
@@ -364,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLogoutDetail.addEventListener('click', () => {
             currentPersonId = '';
             loggedInMember = null;
+            isAdminUser = false;
             showPage(loginPage);
             loginIdInput.value = '';
         });
@@ -525,7 +543,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span style="font-size: 15px; font-weight: 500; color: var(--text-color);">${escapeHtml(member.related || '-')}</span>
                     </div>
                 </div>
+
+                ${(isOwnProfile || isAdminUser) ? `
+                <div style="width: 100%; margin-top: 20px;">
+                    <button type="button" id="btn-notify-payment" class="btn primary" style="width: 100%; background: #3b82f6; border-color: #3b82f6; font-weight: 600;">
+                        💰 แจ้งผลการส่งเงิน
+                    </button>
+                </div>
+                ` : ''}
             `;
+
+            // Add event listener for the new button if it exists
+            setTimeout(() => {
+                const btnNotifyPayment = document.getElementById('btn-notify-payment');
+                if (btnNotifyPayment) {
+                    btnNotifyPayment.addEventListener('click', () => {
+                        transPersonIdInput.value = member.personId;
+                        const today = new Date();
+                        transDateInput.value = today.toISOString().split('T')[0];
+                        showPage(transactionPage);
+                    });
+                }
+            }, 0);
         }
         showPage(memberDetailPage);
     }
@@ -649,4 +688,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
         financialReportContent.innerHTML = tableHtml;
     }
+
+    // TRANSACTION LOGIC
+    if (btnBackFromTransaction) {
+        btnBackFromTransaction.addEventListener('click', () => {
+            if (loggedInMember) {
+                showMemberDetail(loggedInMember);
+            } else {
+                showPage(loginPage);
+            }
+        });
+    }
+
+    if (btnUploadSlip) {
+        btnUploadSlip.addEventListener('click', () => {
+            transSlipInput.click();
+        });
+    }
+
+    transSlipInput.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                base64Slip = event.target.result;
+                slipPreview.src = base64Slip;
+                slipPreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            slipPreview.style.display = 'none';
+            base64Slip = '';
+        }
+    });
+
+    transactionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = {
+            date: transDateInput.value,
+            personId: transPersonIdInput.value,
+            typeCode: transTypeInput.value,
+            amount: parseFloat(transAmountInput.value),
+            remark: transRemarkInput.value,
+            slipFile: base64Slip,
+            slipName: transSlipInput.files[0] ? transSlipInput.files[0].name : 'slip.jpg'
+        };
+
+        if (!base64Slip) {
+            Swal.fire('ข้อผิดพลาด', 'กรุณาอัปโหลดรูปภาพสลิปการโอน', 'error');
+            return;
+        }
+
+        Swal.fire({
+            title: 'กำลังส่งข้อมูล...',
+            text: 'และอัปโหลดภาพสลิป กรุณารอสักครู่',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const result = await callGAS('submitTransaction', formData, true);
+            if (result.success) {
+                Swal.fire('สำเร็จ', 'แจ้งผลการส่งเงินเรียบร้อยแล้ว', 'success').then(() => {
+                    transactionForm.reset();
+                    slipPreview.style.display = 'none';
+                    base64Slip = '';
+                    if (loggedInMember) {
+                        showMemberDetail(loggedInMember);
+                    } else {
+                        showPage(loginPage);
+                    }
+                });
+            } else {
+                Swal.fire('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', result.error, 'error');
+            }
+        } catch (error) {
+            Swal.fire('เกิดข้อผิดพลาดในการเชื่อมต่อ', error.message || String(error), 'error');
+        }
+    });
 });
