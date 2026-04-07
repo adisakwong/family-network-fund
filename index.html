@@ -85,6 +85,10 @@
                     <input type="text" id="reg-surname" required placeholder="กรอกนามสกุล">
                 </div>
                 <div class="form-group">
+                    <label for="reg-nickname">ชื่อเล่น (Nickname)</label>
+                    <input type="text" id="reg-nickname" required placeholder="กรอกชื่อเล่น">
+                </div>
+                <div class="form-group">
                     <label for="reg-address">ที่อยู่ (Address)</label>
                     <textarea id="reg-address" rows="3" required placeholder="กรอกที่อยู่ปัจจุบัน"></textarea>
                 </div>
@@ -136,6 +140,13 @@
                         <img id="image-preview" src="" alt="Image Preview" style="display:none;">
                     </div>
                 </div>
+                <div class="form-group"
+                    style="display: flex; align-items: flex-start; gap: 10px; margin-top: 25px; background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 8px;">
+                    <input type="checkbox" id="reg-consent" required
+                        style="width: 24px; height: 24px; cursor: pointer; margin-top: 2px;">
+                    <label for="reg-consent"
+                        style="margin-bottom: 0; font-size: 14px; font-weight: 500; color: #92400e; line-height: 1.5; cursor: pointer;">ข้าพเจ้าขอสมัครเข้าร่วมฯโดยมีเจตนาเพื่ออัลลอฮ์เท่านั้น</label>
+                </div>
                 <div class="button-group">
                     <button type="button" id="btn-cancel-reg" class="btn secondary">ยกเลิก</button>
                     <button type="submit" id="btn-submit-reg" class="btn primary">บันทึกข้อมูล</button>
@@ -150,6 +161,7 @@
             <div class="members-header main-header">
                 <h2>รายชื่อสมาชิกทั้งหมด</h2>
                 <div class="header-actions">
+                    <button type="button" id="btn-back-to-detail" class="btn secondary small">&larr; หน้าหลัก</button>
                     <button type="button" id="btn-financial-report" class="btn primary small"
                         style="background-color: #10b981; border-color: #10b981;">📊 การเงิน</button>
                     <button type="button" id="btn-logout" class="btn secondary small">ออกจากระบบ</button>
@@ -170,14 +182,36 @@
         <!-- MEMBER DETAIL PAGE        -->
         <!-- ========================= -->
         <section id="member-detail-page" class="page hidden">
-            <div class="members-header" style="justify-content: flex-start; gap: 15px;">
-                <button type="button" id="btn-back-to-list" class="btn secondary small"
-                    style="padding: 6px 12px; margin: 0;">&larr; กลับ</button>
-                <h2 style="margin: 0; font-size: 18px;">ข้อมูลสมาชิก</h2>
+            <div class="members-header main-header">
+                <h2 id="detail-title">ข้อมูลสมาชิก</h2>
+                <div class="header-actions">
+                    <button type="button" id="btn-show-all" class="btn secondary small"
+                        style="display: none;">รายชื่อทั้งหมด</button>
+                    <button type="button" id="btn-financial-report-profile" class="btn primary small"
+                        style="background-color: #10b981; border-color: #10b981; display: none;">📊 การเงิน</button>
+                    <button type="button" id="btn-back-to-list" class="btn secondary small">&larr; กลับ</button>
+                    <button type="button" id="btn-logout-detail" class="btn secondary small"
+                        style="display: none;">ออกจากระบบ</button>
+                </div>
             </div>
             <div id="member-detail-content"
                 style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 10px;">
                 <!-- Details injected here -->
+            </div>
+
+            <!-- NEW: Share Links Section -->
+            <div id="share-links-container"
+                style="display: none; margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px dashed var(--border-color); border-radius: 12px; text-align: center;">
+                <h4 style="font-size: 14px; color: #64748b; margin-bottom: 15px; font-weight: 500;">🔗
+                    ส่งต่อลิงก์ให้สมาชิกท่านอื่น</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button type="button" id="btn-share-register" class="btn secondary small"
+                        style="width: 100%; border: 1px solid #cbd5e1; background: white;">📋
+                        ลิงก์ลงทะเบียนใหม่</button>
+                    <button type="button" id="btn-share-finance" class="btn secondary small"
+                        style="width: 100%; border: 1px solid #cbd5e1; background: white;">📊
+                        ลิงก์สถานะทางการเงิน</button>
+                </div>
             </div>
         </section>
 
@@ -210,10 +244,7 @@
 
     <!-- Configuration for API -->
     <script>
-        // ใส่ URL Web App ของ Google Apps Script ของคุณที่นี่
-        //const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
-        // const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwfwsNUkC2kBwj-4PnMh6J3O_40l2K5jDhSj1aAoHaike5psfER7nbwDVKn5MRGZwkf/exec';
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxNkY4DLM8YG4_IovoKi8x-N8zPyT9ru10CQe9N1hJ59V0riWo1et5zIiImfeCRfKce/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyz7dMJn1mWX1lN-0jAbflAb0YA2dD4Z4mFg0tEte0x2pi_SVzo4f1IcGdRi1dWDbuE/exec';
     </script>
 
     <!-- Include Javascript -->

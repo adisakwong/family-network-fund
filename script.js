@@ -37,8 +37,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingFinancial = document.getElementById('loading-financial');
     const financialReportContent = document.getElementById('financial-report-content');
 
+    const btnShowAll = document.getElementById('btn-show-all');
+    const btnFinancialReportProfile = document.getElementById('btn-financial-report-profile');
+    const btnLogoutDetail = document.getElementById('btn-logout-detail');
+    const btnBackToDetail = document.getElementById('btn-back-to-detail');
+    const shareLinksContainer = document.getElementById('share-links-container');
+    const btnShareRegister = document.getElementById('btn-share-register');
+    const btnShareFinance = document.getElementById('btn-share-finance');
+
     let base64Image = '';
     let currentPersonId = '';
+    let loggedInMember = null;
 
     const isNumeric13 = (val) => {
         return /^\d{13}$/.test(val);
@@ -110,8 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.found) {
                 currentPersonId = personId;
-                loadMembers();
-                showPage(membersPage);
+                loggedInMember = result.member;
+                showMemberDetail(result.member);
             } else {
                 Swal.fire({
                     title: 'ไม่พบข้อมูล',
@@ -233,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const personId = regIdInput.value.trim();
         const name = document.getElementById('reg-name').value.trim();
         const surname = document.getElementById('reg-surname').value.trim();
+        const nickname = document.getElementById('reg-nickname').value.trim();
         const address = document.getElementById('reg-address').value.trim();
         const phone = document.getElementById('reg-phone').value.trim();
         const birthdate = document.getElementById('reg-birthdate').value;
@@ -250,6 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
             personId,
             name,
             surname,
+            nickname,
             address,
             phone,
             birthdate,
@@ -272,13 +283,21 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const result = await callGAS('registerMember', formData, true);
             if (result.success) {
-                Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success').then(() => {
+                Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success').then(async () => {
                     currentPersonId = personId;
                     regForm.reset();
                     imagePreview.style.display = 'none';
                     base64Image = '';
-                    loadMembers();
-                    showPage(membersPage);
+
+                    // Fetch the newly created member to show detail
+                    const checkResult = await callGAS('checkMember', { personId: personId }, false);
+                    if (checkResult.found) {
+                        loggedInMember = checkResult.member;
+                        showMemberDetail(checkResult.member);
+                    } else {
+                        loadMembers();
+                        showPage(membersPage);
+                    }
                 });
             } else {
                 Swal.fire('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', result.error, 'error');
@@ -293,12 +312,76 @@ document.addEventListener('DOMContentLoaded', () => {
         return file.name || 'image.jpg';
     }
 
+    if (btnShareRegister) {
+        btnShareRegister.addEventListener('click', () => {
+            const baseUrl = window.location.href.split('/').slice(0, -1).join('/');
+            const registerUrl = baseUrl + '/register.html';
+            copyToClipboard(registerUrl, 'คัดลอกลิงก์ลงทะเบียนใหม่แล้ว');
+        });
+    }
+
+    if (btnShareFinance) {
+        btnShareFinance.addEventListener('click', () => {
+            const baseUrl = window.location.href.split('/').slice(0, -1).join('/');
+            const financeUrl = baseUrl + '/finance.html';
+            copyToClipboard(financeUrl, 'คัดลอกลิงก์สถานะทางการเงินแล้ว');
+        });
+    }
+
+    function copyToClipboard(text, successMsg) {
+        navigator.clipboard.writeText(text).then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: successMsg,
+                text: text,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }).catch(err => {
+            Swal.fire('Error', 'ไม่สามารถคัดลอกลิงก์ได้', 'error');
+        });
+    }
+
     // MEMBERS PAGE LOGIC
+    if (btnBackToDetail) {
+        btnBackToDetail.addEventListener('click', () => {
+            if (loggedInMember) {
+                showMemberDetail(loggedInMember);
+            } else {
+                showPage(loginPage);
+            }
+        });
+    }
+
     btnLogout.addEventListener('click', () => {
         currentPersonId = '';
+        loggedInMember = null;
         showPage(loginPage);
         loginIdInput.value = '';
     });
+
+    if (btnLogoutDetail) {
+        btnLogoutDetail.addEventListener('click', () => {
+            currentPersonId = '';
+            loggedInMember = null;
+            showPage(loginPage);
+            loginIdInput.value = '';
+        });
+    }
+
+    if (btnShowAll) {
+        btnShowAll.addEventListener('click', () => {
+            loadMembers();
+            showPage(membersPage);
+        });
+    }
+
+    if (btnFinancialReportProfile) {
+        btnFinancialReportProfile.addEventListener('click', () => {
+            loadFinancialReport();
+            showPage(financialReportPage);
+        });
+    }
 
     async function loadMembers() {
         loadingMembers.style.display = 'flex';
@@ -350,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.innerHTML = `
                 <img src="${imgSrc}" class="member-photo" alt="Photo" onerror="this.src='${defaultImage}'">
                 <div class="member-info">
-                    <h3 style="display:flex; align-items:center;">${escapeHtml(member.name)} ${escapeHtml(member.surname)} ${badge}</h3>
+                    <h3 style="display:flex; align-items:center;">${escapeHtml(member.name)} ${escapeHtml(member.surname)} ${member.nickname ? `(${escapeHtml(member.nickname)})` : ''} ${badge}</h3>
                 </div>
             `;
 
@@ -380,8 +463,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function showMemberDetail(member) {
         const defaultImage = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.name + ' ' + member.surname) + '&background=f1f5f9&color=3b82f6&size=200';
         const imgSrc = member.image ? member.image : defaultImage;
-
         const detailContent = document.getElementById('member-detail-content');
+
+        const isOwnProfile = (member.personId === currentPersonId || member.id === currentPersonId);
+
+        if (isOwnProfile) {
+            if (btnShowAll) btnShowAll.style.display = 'inline-block';
+            if (btnFinancialReportProfile) btnFinancialReportProfile.style.display = 'inline-block';
+            if (btnLogoutDetail) btnLogoutDetail.style.display = 'inline-block';
+            if (btnBackToList) btnBackToList.style.display = 'none';
+            if (shareLinksContainer) shareLinksContainer.style.display = 'block';
+        } else {
+            if (btnShowAll) btnShowAll.style.display = 'none';
+            if (btnFinancialReportProfile) btnFinancialReportProfile.style.display = 'none';
+            if (btnLogoutDetail) btnLogoutDetail.style.display = 'none';
+            if (btnBackToList) btnBackToList.style.display = 'inline-block';
+            if (shareLinksContainer) shareLinksContainer.style.display = 'none';
+        }
+
+        //  <h3 style="font-size: 22px; margin-bottom: 15px; color: var(--primary-color); font-weight: 500;">${escapeHtml(member.name)} ${escapeHtml(member.surname)} ${member.nickname ? `(${escapeHtml(member.nickname)})` : ''}</h3>
         if (detailContent) {
             detailContent.innerHTML = `
                 <img src="${imgSrc}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: #f1f5f9; margin-bottom: 20px;" alt="Photo" onerror="this.src='${defaultImage}'">
@@ -395,6 +495,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
                         <span style="font-size: 13px; color: #64748b; display: block; margin-bottom: 2px;">รหัสบัตรประชาชน (13 หลัก)</span>
                         <span style="font-size: 16px; font-weight: 500; color: var(--text-color);">${escapeHtml(member.personId || '-')}</span>
+                    </div>
+                    <div style="margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                        <span style="font-size: 13px; color: #64748b; display: block; margin-bottom: 2px;">ชื่อเล่น (Nickname)</span>
+                        <span style="font-size: 16px; font-weight: 500; color: var(--text-color);">${escapeHtml(member.nickname || '-')}</span>
                     </div>
                     <div style="margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
                         <span style="font-size: 13px; color: #64748b; display: block; margin-bottom: 2px;">วันเดือนปีเกิด (Birthdate)</span>
@@ -435,7 +539,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnBackFromFinancial) {
         btnBackFromFinancial.addEventListener('click', () => {
-            showPage(membersPage);
+            // Check if we came from own profile
+            if (loggedInMember && membersPage.classList.contains('hidden')) {
+                showMemberDetail(loggedInMember);
+            } else {
+                showPage(membersPage);
+            }
         });
     }
 
@@ -485,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             monthlyData[monthKey].income += (Number(item.income) || 0);
             monthlyData[monthKey].outcome += (Number(item.outcome) || 0);
-            
+
             totalIncome += (Number(item.income) || 0);
             totalOutcome += (Number(item.outcome) || 0);
         });

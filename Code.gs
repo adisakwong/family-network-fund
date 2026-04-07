@@ -65,7 +65,7 @@ function getSheet() {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
     // Add headers if created new
-    sheet.appendRow(['Register_date', 'Person_id', 'Name', 'Surname', 'Address', 'Phone', 'Image_URL', 'Birthdate', 'Illness', 'Beneficiary', 'Related']);
+    sheet.appendRow(['Register_date', 'Person_id', 'Name', 'Surname', 'Address', 'Phone', 'Image_URL', 'Birthdate', 'Illness', 'Beneficiary', 'Related', 'Nickname']);
   }
   return sheet;
 }
@@ -93,15 +93,41 @@ function checkMember(personId) {
     
     if (data.length <= 1) return { found: false };
     
-    // Find column index for 'Person_id'
     const headers = data[0];
-    const idPersonTarget = headers.indexOf('Person_id') > -1 ? headers.indexOf('Person_id') : 0;
+    const idRegisterDate = headers.indexOf('Register_date') > -1 ? headers.indexOf('Register_date') : 0;
+    // Try to find Person_id column, fallback to index 1 if not exactly found
+    const findPersonCol = headers.findIndex(h => h.toString().toLowerCase().includes('person_id') || h.toString().toLowerCase().includes('บัตรประชาชน'));
+    const idPerson = findPersonCol > -1 ? findPersonCol : 1;
     
-    // Start from row 1 (exclude header)
+    const idName = headers.indexOf('Name') > -1 ? headers.indexOf('Name') : 2;
+    const idSurname = headers.indexOf('Surname') > -1 ? headers.indexOf('Surname') : 3;
+    const idAddress = headers.indexOf('Address') > -1 ? headers.indexOf('Address') : 4;
+    const idPhone = headers.indexOf('Phone') > -1 ? headers.indexOf('Phone') : 5;
+    const idImage = headers.indexOf('Image_URL') > -1 ? headers.indexOf('Image_URL') : 6;
+    const idBirthdate = headers.indexOf('Birthdate') > -1 ? headers.indexOf('Birthdate') : 7;
+    const idIllness = headers.indexOf('Illness') > -1 ? headers.indexOf('Illness') : 8;
+    const idBeneficiary = headers.indexOf('Beneficiary') > -1 ? headers.indexOf('Beneficiary') : 9;
+    const idRelated = headers.indexOf('Related') > -1 ? headers.indexOf('Related') : 10;
+    const idNicknameCol = headers.findIndex(h => h.toString().toLowerCase().includes('nickname') || h.toString().toLowerCase().includes('ชื่อเล่น'));
+    const idNickname = idNicknameCol > -1 ? idNicknameCol : 11;
+
     for (let i = 1; i < data.length; i++) {
-        // Enforce string comparison
-        if (String(data[i][idPersonTarget]).trim() === String(personId).trim()) {
-            return { found: true };
+        if (String(data[i][idPerson]).trim() === String(personId).trim()) {
+            const member = {
+                registerDate: idRegisterDate !== -1 && data[i][idRegisterDate] !== undefined ? data[i][idRegisterDate] : '',
+                personId: String(data[i][idPerson]).trim(),
+                name: data[i][idName],
+                surname: data[i][idSurname],
+                address: data[i][idAddress],
+                phone: data[i][idPhone],
+                image: data[i][idImage],
+                birthdate: idBirthdate !== -1 && data[i][idBirthdate] !== undefined ? data[i][idBirthdate] : '',
+                illness: idIllness !== -1 && data[i][idIllness] !== undefined ? data[i][idIllness] : '',
+                beneficiary: idBeneficiary !== -1 && data[i][idBeneficiary] !== undefined ? data[i][idBeneficiary] : '',
+                related: idRelated !== -1 && data[i][idRelated] !== undefined ? data[i][idRelated] : '',
+                nickname: idNickname !== -1 && data[i][idNickname] !== undefined ? data[i][idNickname] : ''
+            };
+            return { found: true, member: member };
         }
     }
     return { found: false };
@@ -142,19 +168,35 @@ function registerMember(data) {
 
     // Save to Google Sheet
     const sheet = getSheet();
-    sheet.appendRow([
-      data.registerDate || '',
-      data.personId ? "'" + String(data.personId) : '',
-      data.name,
-      data.surname,
-      data.address,
-      data.phone ? "'" + String(data.phone) : '',
-      imageUrl,
-      data.birthdate || '',
-      data.illness || '',
-      data.beneficiary || '',
-      data.related || ''
-    ]);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const requiredHeaders = ['Register_date', 'Person_id', 'Name', 'Surname', 'Address', 'Phone', 'Image_URL', 'Birthdate', 'Illness', 'Beneficiary', 'Related', 'Nickname'];
+    
+    // Check and add missing headers to maintain correct column alignment
+    requiredHeaders.forEach((h, index) => {
+        if (headers.indexOf(h) === -1) {
+            sheet.getRange(1, index + 1).setValue(h);
+        }
+    });
+
+    // Re-check headers after potentially adding new ones
+    const currentHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const colIdx = (h) => currentHeaders.indexOf(h);
+
+    const rowData = new Array(requiredHeaders.length).fill('');
+    rowData[colIdx('Register_date')] = data.registerDate || '';
+    rowData[colIdx('Person_id')] = data.personId ? "'" + String(data.personId) : '';
+    rowData[colIdx('Name')] = data.name || '';
+    rowData[colIdx('Surname')] = data.surname || '';
+    rowData[colIdx('Address')] = data.address || '';
+    rowData[colIdx('Phone')] = data.phone ? "'" + String(data.phone) : '';
+    rowData[colIdx('Image_URL')] = imageUrl || '';
+    rowData[colIdx('Birthdate')] = data.birthdate || '';
+    rowData[colIdx('Illness')] = data.illness || '';
+    rowData[colIdx('Beneficiary')] = data.beneficiary || '';
+    rowData[colIdx('Related')] = data.related || '';
+    rowData[colIdx('Nickname')] = data.nickname || '';
+
+    sheet.appendRow(rowData);
 
     return { success: true };
   } catch (error) {
@@ -177,17 +219,19 @@ function getAllMembers() {
     const headers = data[0];
     const members = [];
     
-    const idRegisterDate = headers.indexOf('Register_date') > -1 ? headers.indexOf('Register_date') : -1;
-    const idPerson = headers.indexOf('Person_id') > -1 ? headers.indexOf('Person_id') : 0;
-    const idName = headers.indexOf('Name') > -1 ? headers.indexOf('Name') : 1;
-    const idSurname = headers.indexOf('Surname') > -1 ? headers.indexOf('Surname') : 2;
-    const idAddress = headers.indexOf('Address') > -1 ? headers.indexOf('Address') : 3;
-    const idPhone = headers.indexOf('Phone') > -1 ? headers.indexOf('Phone') : 4;
-    const idImage = headers.indexOf('Image_URL') > -1 ? headers.indexOf('Image_URL') : 5;
-    const idBirthdate = headers.indexOf('Birthdate') > -1 ? headers.indexOf('Birthdate') : 6;
-    const idIllness = headers.indexOf('Illness') > -1 ? headers.indexOf('Illness') : 7;
-    const idBeneficiary = headers.indexOf('Beneficiary') > -1 ? headers.indexOf('Beneficiary') : 8;
-    const idRelated = headers.indexOf('Related') > -1 ? headers.indexOf('Related') : 9;
+    const idRegisterDate = headers.indexOf('Register_date') > -1 ? headers.indexOf('Register_date') : 0;
+    const idPerson = headers.indexOf('Person_id') > -1 ? headers.indexOf('Person_id') : 1;
+    const idName = headers.indexOf('Name') > -1 ? headers.indexOf('Name') : 2;
+    const idSurname = headers.indexOf('Surname') > -1 ? headers.indexOf('Surname') : 3;
+    const idAddress = headers.indexOf('Address') > -1 ? headers.indexOf('Address') : 4;
+    const idPhone = headers.indexOf('Phone') > -1 ? headers.indexOf('Phone') : 5;
+    const idImage = headers.indexOf('Image_URL') > -1 ? headers.indexOf('Image_URL') : 6;
+    const idBirthdate = headers.indexOf('Birthdate') > -1 ? headers.indexOf('Birthdate') : 7;
+    const idIllness = headers.indexOf('Illness') > -1 ? headers.indexOf('Illness') : 8;
+    const idBeneficiary = headers.indexOf('Beneficiary') > -1 ? headers.indexOf('Beneficiary') : 9;
+    const idRelated = headers.indexOf('Related') > -1 ? headers.indexOf('Related') : 10;
+    const idNicknameCol = headers.findIndex(h => h.toString().toLowerCase().includes('nickname') || h.toString().toLowerCase().includes('ชื่อเล่น'));
+    const idNickname = idNicknameCol > -1 ? idNicknameCol : 11;
 
     for (let i = 1; i < data.length; i++) {
         // Skip empty rows
@@ -204,7 +248,8 @@ function getAllMembers() {
             birthdate: idBirthdate !== -1 && data[i][idBirthdate] !== undefined ? data[i][idBirthdate] : '',
             illness: idIllness !== -1 && data[i][idIllness] !== undefined ? data[i][idIllness] : '',
             beneficiary: idBeneficiary !== -1 && data[i][idBeneficiary] !== undefined ? data[i][idBeneficiary] : '',
-            related: idRelated !== -1 && data[i][idRelated] !== undefined ? data[i][idRelated] : ''
+            related: idRelated !== -1 && data[i][idRelated] !== undefined ? data[i][idRelated] : '',
+            nickname: idNickname !== -1 && data[i][idNickname] !== undefined ? data[i][idNickname] : ''
         });
     }
     return { success: true, members: members };
