@@ -149,7 +149,9 @@ function checkMember(personId) {
  * @return {object} - { success: boolean }
  */
 function registerMember(data) {
+  const lock = LockService.getScriptLock();
   try {
+    lock.waitLock(10000);
     const folder = getFolder();
     let imageUrl = '';
     
@@ -208,6 +210,8 @@ function registerMember(data) {
     return { success: true };
   } catch (error) {
     return { success: false, error: error.toString() };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -357,7 +361,9 @@ function getSlipsFolder() {
  * @return {object} - { success: boolean }
  */
 function submitTransaction(data) {
+  const lock = LockService.getScriptLock();
   try {
+    lock.waitLock(10000);
     const folder = getSlipsFolder();
     let slipUrl = '';
     
@@ -384,9 +390,36 @@ function submitTransaction(data) {
       data.remark || ''
     ]);
 
+    // [New] Send Telegram Notification
+    try {
+      const memberInfo = checkMember(data.personId);
+      let memberName = data.personId;
+      if (memberInfo.found) {
+        memberName = memberInfo.member.name + ' ' + memberInfo.member.surname;
+      }
+      
+      const typeMap = {
+        'INP01': 'บริจาคเป็นทุนประเดิม(ค่าสมัคร)',
+        'INP02': 'บริจาครายเดือน(ค่าสมาชิก)',
+        'INP03': 'บริจาครายปี(ค่าสมาชิก)',
+        'INP04': 'บริจาคทำบุญอื่นๆ',
+        'OUT01': 'สนับสนุนค่ารักษาพยาบาล',
+        'OUT02': 'สนับสนุนค่าทำพิธีศพ'
+      };
+      const typeLabel = typeMap[data.typeCode] || data.typeCode;
+      
+      const msg = `💰 <b>มีการแจ้งทำรายการใหม่</b>\n👤 ผู้แจ้ง: ${memberName}\n📝 ประเภท: ${typeLabel}\n💵 จำนวน: ${data.amount.toLocaleString()} บาท\n📅 วันที่โอน: ${data.date}\n💬 หมายเหตุ: ${data.remark || '-'}`;
+      
+      sendTelegramNotify(msg, slipUrl);
+    } catch (tgErr) {
+      console.error('Notify fail: ' + tgErr.toString());
+    }
+
     return { success: true };
   } catch (error) {
     return { success: false, error: error.toString() };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -420,3 +453,110 @@ function isAdmin(personId) {
     return false;
   }
 }
+
+/**
+ * [New] Send notification to Telegram Group/Channel via Telegram Bot API
+ */
+const TG_BOT_TOKEN = '8732094943:AAGSGEhAnWyrZZqIb4FYlksiyJNAeOI5eew'; // ใส่ Bot Token จาก BotFather
+const TG_CHAT_ID = '6931878766';     // ลองเพิ่ม -100 เข้าไปข้างหน้า (สำหรับกลุ่ม)
+
+function sendTelegramNotify(message, imageUrl) {
+  // If token or chat id is not set, skip
+  if (!TG_BOT_TOKEN || TG_BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN' || !TG_CHAT_ID || TG_CHAT_ID === 'YOUR_TELEGRAM_CHAT_ID') {
+    console.log('Telegram Token or Chat ID not set. Skipping notification.');
+    return;
+  }
+  
+  const botUrl = `https://api.telegram.org/bot${TG_BOT_TOKEN}`;
+  
+  try {
+    if (imageUrl) {
+      // Try sending with Photo first
+      const photoUrl = `${botUrl}/sendPhoto`;
+      const photoPayload = {
+        'chat_id': TG_CHAT_ID,
+        'photo': imageUrl,
+        'caption': message,
+        'parse_mode': 'HTML'
+      };
+      
+      const photoOptions = {
+        'method': 'post',
+        'contentType': 'application/json',
+        'payload': JSON.stringify(photoPayload),
+        'muteHttpExceptions': true
+      };
+      
+      const response = UrlFetchApp.fetch(photoUrl, photoOptions);
+      const resCode = response.getResponseCode();
+      const resBody = response.getContentText();
+      
+      console.log(`Telegram sendPhoto Response (${resCode}): ${resBody}`);
+      
+      // If sendPhoto failed (e.g. image URL not accessible by Telegram), fallback to sendMessage
+      if (resCode !== 200) {
+        sendTextMessageFallback(botUrl, message, imageUrl);
+      }
+    } else {
+      sendTextMessageFallback(botUrl, message);
+    }
+  } catch (e) {
+    console.error('Telegram Notify Error: ' + e.toString());
+    // Try text-only as last resort
+    try { sendTextMessageFallback(botUrl, message); } catch(inner) {}
+  }
+}
+
+/**
+ * Helper to send text message if photo fails or no photo
+ */
+function sendTextMessageFallback(botUrl, message, link) {
+  const url = `${botUrl}/sendMessage`;
+  let text = message;
+  if (link) {
+    text += `\n\n📄 <b>ลิงก์รูปสลิป:</b> <a href="${link}">ดูรูปภาพ</a>`;
+  }
+  
+  const payload = {
+    'chat_id': TG_CHAT_ID,
+    'text': text,
+    'parse_mode': 'HTML',
+    'disable_web_page_preview': false
+  };
+  
+  const options = {
+    'method': 'post',
+    'contentType': 'application/json',
+    'payload': JSON.stringify(payload),
+    'muteHttpExceptions': true
+  };
+  
+  const response = UrlFetchApp.fetch(url, options);
+  console.log(`Telegram fallback Response (${response.getResponseCode()}): ${response.getContentText()}`);
+}
+
+/**
+ * ฟังก์ชันสำหรับทดสอบการแจ้งเตือน Telegram (ใช้กด Run ในหน้า App Script Editor)
+ * เมื่อกดปุ่ม Run ครั้งแรก ระบบจะให้กดยืนยันสิทธิ์ (Allow Permissions)
+ */
+function testTelegram() {
+  const testMsg = "🔔 <b>ทดสอบการเชื่อมต่อ Telegram</b>\nหากคุณเห็นข้อความนี้ แสดงว่าระบบพร้อมใช้งานแล้วครับ!";
+  
+  // ย้ายการเรียกใช้ออกมานอก try-catch เพื่อให้ระบบ Google บังคับกดยอมรับสิทธิ์ (Authorize)
+  const botUrl = `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`;
+  const payload = {
+    'chat_id': TG_CHAT_ID,
+    'text': testMsg,
+    'parse_mode': 'HTML'
+  };
+  
+  // บรรทัดนี้จะบังคับให้เกิดกล่องข้อความ Authorization Required หากยังไม่ได้รับสิทธิ์
+  UrlFetchApp.fetch(botUrl, {
+    'method': 'post',
+    'contentType': 'application/json',
+    'payload': JSON.stringify(payload)
+  });
+  
+  console.log("กรุณาดูผลการส่งใน Telegram");
+}
+

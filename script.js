@@ -63,6 +63,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let base64Slip = '';
     let isAdminUser = false;
 
+    // Pagination variables
+    const paginationControls = document.getElementById('pagination-controls');
+    const btnPrevPage = document.getElementById('btn-prev-page');
+    const btnNextPage = document.getElementById('btn-next-page');
+    const pageIndicator = document.getElementById('page-indicator');
+    
+    let allMembersData = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
     const isNumeric13 = (val) => {
         return /^\d{13}$/.test(val);
     };
@@ -404,12 +414,23 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadMembers() {
         loadingMembers.style.display = 'flex';
         membersList.innerHTML = '';
+        if (paginationControls) paginationControls.style.display = 'none';
 
         try {
             const result = await callGAS('getAllMembers', {}, false);
             loadingMembers.style.display = 'none';
             if (result.success) {
-                renderMembers(result.members);
+                allMembersData = result.members || [];
+                // Sort members to put the current user at the top
+                allMembersData.sort((a, b) => {
+                    const isA = (a.personId === currentPersonId || a.id === currentPersonId);
+                    const isB = (b.personId === currentPersonId || b.id === currentPersonId);
+                    if (isA && !isB) return -1;
+                    if (!isA && isB) return 1;
+                    return 0;
+                });
+                currentPage = 1;
+                renderMembersPage();
             } else {
                 membersList.innerHTML = `<p style="color:red">ไม่สามารถโหลดข้อมูลได้: ${result.error}</p>`;
             }
@@ -419,24 +440,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderMembers(members) {
+    function renderMembersPage() {
         membersList.innerHTML = '';
 
-        if (!members || members.length === 0) {
+        if (allMembersData.length === 0) {
             membersList.innerHTML = '<p style="text-align:center; color:#888;">ยังไม่มีสมาชิก</p>';
+            if (paginationControls) paginationControls.style.display = 'none';
             return;
         }
 
-        // Sort members to put the current user at the top
-        members.sort((a, b) => {
-            const isA = (a.personId === currentPersonId || a.id === currentPersonId);
-            const isB = (b.personId === currentPersonId || b.id === currentPersonId);
-            if (isA && !isB) return -1;
-            if (!isA && isB) return 1;
-            return 0;
-        });
+        const totalPages = Math.ceil(allMembersData.length / itemsPerPage);
+        
+        // Update pagination UI
+        if (paginationControls && totalPages > 1) {
+            paginationControls.style.display = 'flex';
+            pageIndicator.textContent = `หน้า ${currentPage} / ${totalPages}`;
+            btnPrevPage.disabled = currentPage === 1;
+            btnNextPage.disabled = currentPage === totalPages;
+        } else if (paginationControls) {
+            paginationControls.style.display = 'none';
+        }
 
-        members.forEach(member => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageItems = allMembersData.slice(startIndex, endIndex);
+
+        pageItems.forEach(member => {
             const defaultImage = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.name + ' ' + member.surname) + '&background=f1f5f9&color=3b82f6&size=128';
             const imgSrc = member.image ? member.image : defaultImage;
 
@@ -475,6 +504,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnBackToList) {
         btnBackToList.addEventListener('click', () => {
             showPage(membersPage);
+        });
+    }
+
+    if (btnPrevPage && btnNextPage) {
+        btnPrevPage.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderMembersPage();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+
+        btnNextPage.addEventListener('click', () => {
+            const totalPages = Math.ceil(allMembersData.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderMembersPage();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         });
     }
 
@@ -561,12 +609,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         transPersonIdInput.value = member.personId;
                         const today = new Date();
                         transDateInput.value = today.toISOString().split('T')[0];
+                        
+                        // Update transaction type dropdown based on admin status
+                        updateTransactionOptions();
+                        
                         showPage(transactionPage);
                     });
                 }
             }, 0);
         }
         showPage(memberDetailPage);
+    }
+
+    function updateTransactionOptions() {
+        let optionsHtml = `
+            <option value="">-- เลือกประเภท --</option>
+            <option value="INP02">บริจาครายเดือน(ค่าสมาชิก)</option>
+            <option value="INP03">บริจาครายปี(ค่าสมาชิก)</option>
+            <option value="INP01">บริจาคเป็นทุนประเดิม(ค่าสมัคร)</option>
+            <option value="INP04">บริจาคทำบุญอื่นๆ</option>
+        `;
+
+        if (isAdminUser) {
+            optionsHtml += `
+                <option value="OUT01">สนับสนุนค่ารักษาพยาบาล</option>
+                <option value="OUT02">สนับสนุนค่าทำพิธีศพ</option>
+            `;
+        }
+
+        transTypeInput.innerHTML = optionsHtml;
     }
 
     if (btnFinancialReport) {

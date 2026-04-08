@@ -177,6 +177,14 @@
             <div id="members-list" class="members-grid">
                 <!-- Members will be dynamically loaded here -->
             </div>
+
+            <!-- NEW: Pagination Controls -->
+            <div id="pagination-controls"
+                style="display: none; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+                <button type="button" id="btn-prev-page" class="btn secondary small" disabled>&larr; ก่อนหน้า</button>
+                <span id="page-indicator" style="font-size: 14px; font-weight: 500; color: #64748b;">หน้า 1 / 1</span>
+                <button type="button" id="btn-next-page" class="btn secondary small">ถัดไป &rarr;</button>
+            </div>
         </section>
 
         <!-- ========================= -->
@@ -255,21 +263,22 @@
                     <input type="text" id="trans-person-id" readonly required>
                 </div>
                 <div class="form-group">
-                    <label for="trans-type">ประเภทการส่งเงิน (Type)</label>
+                    <label for="trans-type">ประเภทการส่งและจ่ายเงิน (Type)</label>
                     <select id="trans-type" required
                         style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit;">
                         <option value="">-- เลือกประเภท --</option>
-                        <option value="101">บริจาครายเดือน(ค่าสมาชิก)</option>
-                        <option value="102">บริจาครายปี(ค่าสมาชิก)</option>
-                        <option value="103">บริจาคเป็นทุนประเดิม(ค่าสมัคร)</option>
-                        <option value="104">บริจาคทำบุญอื่นๆ</option>
+                        <option value="INP02">บริจาครายเดือน(ค่าสมาชิก)</option>
+                        <option value="INP03">บริจาครายปี(ค่าสมาชิก)</option>
+                        <option value="INP01">บริจาคเป็นทุนประเดิม(ค่าสมัคร)</option>
+                        <option value="INP04">บริจาคทำบุญอื่นๆ</option>
                     </select>
                     <!-- 
-                    100=บริจาคเป็นทุนประเดิม(ค่าสมัคร)
-                    101=บริจาครายเดือน(ค่าสมาชิก)
-                    102=บริจาครายปี(ค่าสมาชิก)
-                    201=มอบเงินเยี่ยมผู้ป่วย
-                    202=มอบเงินช่วยเหลือพิธีศพ
+                    INP01=บริจาคเป็นทุนประเดิม(ค่าสมัคร)
+                    INP02=บริจาครายเดือน(ค่าสมาชิก)
+                    INP03=บริจาครายปี(ค่าสมาชิก)
+                    INP04=บริจาคทำบุญอื่นๆ
+                    OUT01=สนับสนุนค่ารักษาพยาบาล
+                    OUT02=สนับสนุนค่าทำพิธีศพ
                     -->
                 </div>
                 <div class="form-group">
@@ -307,7 +316,8 @@
     <!-- Configuration for API -->
     <script>
         // const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyz7dMJn1mWX1lN-0jAbflAb0YA2dD4Z4mFg0tEte0x2pi_SVzo4f1IcGdRi1dWDbuE/exec';
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyifIPGgxc2GZ4BQbpsi4dAWR7KoRSxxXHpgKLkYJHhfHPp2_8_rgDQK56o5BiX4pEy/exec';
+        // const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxH5l7OXDhl9-VTpCK31v47FDUJNWSCF2YjRjfwDInXq93VJbcJC6PyrBR1zHzPj6Aw/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwJQNoM1aPC6gUjlen-2omod40AWhms8wuAcR8YU-QdZqGqZkmR1sgK_6QWbWd2zZkp/exec';
     </script>
 
     <!-- Include Javascript -->
