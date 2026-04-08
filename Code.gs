@@ -457,8 +457,8 @@ function isAdmin(personId) {
 /**
  * [New] Send notification to Telegram Group/Channel via Telegram Bot API
  */
-const TG_BOT_TOKEN = '8732094943:AAGSGEhAnWyrZZqIb4FYlksiyJNAeOI5eew'; // ใส่ Bot Token จาก BotFather
-const TG_CHAT_ID = '6931878766';     // ลองเพิ่ม -100 เข้าไปข้างหน้า (สำหรับกลุ่ม)
+const TG_BOT_TOKEN = ''; // ใส่ Bot Token จาก BotFather
+const TG_CHAT_ID = '';     // ลองเพิ่ม -100 เข้าไปข้างหน้า (สำหรับกลุ่ม)
 
 function sendTelegramNotify(message, imageUrl) {
   // If token or chat id is not set, skip
