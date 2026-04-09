@@ -457,8 +457,8 @@ function isAdmin(personId) {
 /**
  * [New] Send notification to Telegram Group/Channel via Telegram Bot API
  */
-const TG_BOT_TOKEN = ''; // ใส่ Bot Token จาก BotFather
-const TG_CHAT_ID = '';     // ลองเพิ่ม -100 เข้าไปข้างหน้า (สำหรับกลุ่ม)
+const TG_BOT_TOKEN = '8732094943:AAGSGEhAnWyrZZqIb4FYlksiyJNAeOI5eew'; // ใส่ Bot Token จาก BotFather
+const TG_CHAT_ID = '6931878766';     // ลองเพิ่ม -100 เข้าไปข้างหน้า (สำหรับกลุ่ม)
 
 function sendTelegramNotify(message, imageUrl) {
   // If token or chat id is not set, skip
@@ -560,3 +560,91 @@ function testTelegram() {
   console.log("กรุณาดูผลการส่งใน Telegram");
 }
 
+/**
+ * แจ้งเตือนสรุปยอดประจำวัน
+ */
+function sendDailySummary() {
+  generateAndSendSummary('daily');
+}
+
+/**
+ * แจ้งเตือนสรุปยอดประจำเดือน
+ */
+function sendMonthlySummary() {
+  generateAndSendSummary('monthly');
+}
+
+/**
+ * ฟังก์ชันหลักในการคำนวณและส่งแจ้งเตือน
+ * @param {string} period - 'daily' หรือ 'monthly'
+ */
+function generateAndSendSummary(period) {
+  try {
+    const sheet = getTransactionsSheet(); 
+    const data = sheet.getDataRange().getValues();
+    
+    // ลบบรรทัด if (data.length <= 1) return; ออก เพื่อให้มันทำงานต่อเช็คยอด
+    
+    const headers = data.length > 0 ? data[0] : [];
+    const dateCol = 0;   
+    const typeCol = 2;   
+    const amountCol = 3; 
+    
+    const now = new Date();
+    let totalIncome = 0;
+    let totalOutcome = 0;
+    let count = 0;
+    
+    // แก้ลูปให้เช็คว่าถ้ามี data ให้วนลูป
+    if (data.length > 1) {
+      for (let i = 1; i < data.length; i++) {
+        let rowDateObj = new Date(data[i][dateCol]);
+        if (isNaN(rowDateObj.getTime())) continue; 
+        
+        let isMatch = false;
+        if (period === 'daily') {
+          if (rowDateObj.getDate() === now.getDate() &&
+              rowDateObj.getMonth() === now.getMonth() &&
+              rowDateObj.getFullYear() === now.getFullYear()) {
+            isMatch = true;
+          }
+        } else if (period === 'monthly') {
+          if (rowDateObj.getMonth() === now.getMonth() &&
+              rowDateObj.getFullYear() === now.getFullYear()) {
+            isMatch = true;
+          }
+        }
+        
+        if (isMatch) {
+           count++;
+           const typeCode = String(data[i][typeCol]).toUpperCase();
+           const amount = parseFloat(data[i][amountCol]) || 0;
+           
+           if (typeCode.startsWith('INP')) {
+             totalIncome += amount;
+           } else if (typeCode.startsWith('OUT')) {
+             totalOutcome += amount;
+           }
+        }
+      }
+    }
+    
+    let title = period === 'daily' ? '📊 <b>สรุปยอดประจำวัน</b>' : '📊 <b>สรุปยอดประจำเดือน</b>';
+    let dateStr = period === 'daily' ? Utilities.formatDate(now, "GMT+0700", "dd/MM/yyyy") : Utilities.formatDate(now, "GMT+0700", "MMMM yyyy");
+    
+    let msg = `${title}\n📆 วันที่: ${dateStr}\n\n`;
+    if (count === 0) {
+      msg += `<i>ไม่มีรายการเคลื่อนไหวในระบบ</i>`;
+    } else {
+      msg += `📥 <b>รายรับรวม:</b> ${totalIncome.toLocaleString('th-TH')} บาท\n`;
+      msg += `📤 <b>รายจ่ายรวม:</b> ${totalOutcome.toLocaleString('th-TH')} บาท\n`;
+      msg += `✅ จำนวนรายการ: ${count} รายการ`;
+    }
+    
+    console.log("กำลังจะส่งข้อความ: " + msg);
+    sendTelegramNotify(msg);
+    
+  } catch(e) {
+    console.error("Summary error: " + e.toString());
+  }
+}

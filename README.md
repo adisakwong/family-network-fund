@@ -25,7 +25,8 @@
 - **อัปโหลดสลิปอัตโนมัติ:** รูปภาพสลิปจะถูกส่งไปเก็บไว้ในโฟลเดอร์ `slips` ใน Google Drive
 
 ### 🔔 ระบบแจ้งเตือน (Real-time Notifications)
-- **LINE Notify API:** เมื่อมีการแจ้งโอนเงิน หรือบันทึกรายจ่ายต่างๆ ระบบจะส่งข้อความแจ้งเตือนพร้อมรูปภาพสลิปไปยังกลุ่ม LINE แจ้งเตือนของคณะกรรมการทันที
+- **Telegram Bot API:** เมื่อมีการแจ้งโอนเงิน หรือบันทึกรายจ่ายต่างๆ ระบบจะส่งข้อความแจ้งเตือนพร้อมรูปภาพสลิปไปยังกลุ่ม Telegram ของคณะกรรมการทันที
+- **ระบบสรุปยอดอัตโนมัติ (Automated Summary):** ดึงยอดรวมจากตาราง `transactions` และส่งรายงานสรุป รายรับ-รายจ่าย เข้า Telegram อัตโนมัติในตอนสิ้นวันและสิ้นเดือน (รองรับการตั้งเวลาผ่าน Google Apps Script Time-driven triggers)
 
 ---
 
@@ -35,7 +36,7 @@
 - **Backend:** [Google Apps Script (GAS)](https://developers.google.com/apps-script)
 - **Database:** [Google Sheets](https://docs.google.com/spreadsheets/)
 - **Storage:** [Google Drive](https://www.google.com/drive/) 
-- **Notification:** [LINE Notify API](https://notify-bot.line.me/)
+- **Notification:** [Telegram Bot API](https://core.telegram.org/bots/api)
 
 ---
 
@@ -45,9 +46,10 @@
 1. **สร้าง Spreadsheet:** เตรียมไฟล์ Google Sheets เป็นฐานข้อมูล
 2. **เปิด Apps Script:** ไปที่เมนู `Extensions` (ส่วนขยาย) > `Apps Script`
 3. **วางโค้ด:** คัดลอกโค้ดจากไฟล์ `Code.gs` สคริปต์นี้ไปวางทับในหน้าต่าง
-4. **ตั้งค่า LINE Notify:**
-   - สมัคร LINE Notify Token 
-   - แก้ไขตัวแปร `LINE_NOTIFY_TOKEN` ในไฟล์ `Code.gs`
+4. **ตั้งค่า Telegram Bot (ระบบแจ้งเตือน):**
+   - ขอ Bot Token ผ่าน BotFather ใน Telegram และหาค่า Chat ID ของกลุ่ม
+   - แก้ไขตัวแปร `TG_BOT_TOKEN` และ `TG_CHAT_ID` ในไฟล์ `Code.gs`
+   - หากต้องการส่งสรุปยอดอัตโนมัติ ให้ไปตั้งค่า Time-driven triggers ใน Apps Script ให้รันฟังก์ชัน `sendDailySummary` และ `sendMonthlySummary`
 5. **Deploy เป็น Web App:**
    - กดปุ่ม **Deploy** > **New Deployment** > **Web App**
    - **Execute as:** "Me"
@@ -80,4 +82,4 @@
 
 ---
 
-📄 **คู่มือการใช้งาน:** สำหรับสมาชิกและผู้ดูแลที่ต้องการตั้งค่า LINE สามารถอ่านต่อได้ที่ไฟล์ `USER_GUIDE.md`
+📄 **คู่มือการใช้งาน:** สำหรับสมาชิกและผู้ดูแลที่ต้องการตั้งค่าการใช้งานต่างๆ และ Telegram สามารถอ่านต่อได้ที่ไฟล์ `USER_GUIDE.md`
